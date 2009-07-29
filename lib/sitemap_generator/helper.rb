@@ -13,16 +13,17 @@ module SitemapGenerator
       eval(open(sitemap_mapper_file).read, b)
     end
     
-    def url_with_hostname(path)
-      URI.join(Sitemap.default_host, path).to_s
+    def url_with_hostname(path, options={})
+      default_host = Sitemap.default_host || options[:default_host]
+      URI.join(default_host, path).to_s
     end
     
     def w3c_date(date)
        date.utc.strftime("%Y-%m-%dT%H:%M:%S+00:00")
     end
     
-    def ping_search_engines(sitemap_index)
-      index_location = CGI.escape(url_with_hostname(sitemap_index))
+    def ping_search_engines(sitemap_index, options={})
+      index_location = CGI.escape(url_with_hostname(sitemap_index, options))
       # engines list from http://en.wikipedia.org/wiki/Sitemap_index
       {:google => "http://www.google.com/webmasters/sitemaps/ping?sitemap=#{index_location}",
         :yahoo => "http://search.yahooapis.com/SiteExplorerService/V1/ping?sitemap=#{index_location}",

@@ -4,7 +4,6 @@ module SitemapGenerator
       def generate(path, options = {})
         options.assert_valid_keys(:priority, :changefreq, :lastmod, :host, :default_host)
         default_host = Sitemap.default_host || options[:default_host]
-        puts default_host
         options.reverse_merge!(:priority => 0.5, :changefreq => 'weekly', :lastmod => Time.now, :host => default_host)
         {
           :path => path,

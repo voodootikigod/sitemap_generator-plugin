@@ -80,6 +80,7 @@ namespace :sitemap do
       Rake::Task['sitemap:clean'].invoke
       SitemapGenerator::SitemapSet.each{|sitemapset|
         links_grps = sitemapset.links.in_groups_of(50000, false)
+        default_host = sitemapset.default_host
         filename_prefix = sitemapset.default_host.gsub("http://","").gsub(".","")
         sitemap_files = []
         xml_sitemap_template = File.join(File.dirname(__FILE__), '../templates/xml_sitemap.builder')
