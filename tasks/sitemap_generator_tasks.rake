@@ -17,7 +17,15 @@ namespace :sitemap do
   task :refresh => ['sitemap:create'] do
     ping_search_engines("sitemap_index.xml.gz")
   end
-
+  
+  desc "Ping Search Engines about sitemap_index.xml.gz"
+  task :ping=>[:environment] do
+    include SitemapGenerator::Helper
+    SitemapGenerator::Sitemap.default_host = "http://www.ourparents.com"
+    ping_search_engines("sitemap_index.xml.gz")
+  end
+  
+  
   desc "Create Sitemap XML files (don't ping search engines)"
   task 'refresh:no_ping' => ['sitemap:create'] do
   end
