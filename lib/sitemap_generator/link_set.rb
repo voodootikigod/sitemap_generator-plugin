@@ -11,10 +11,14 @@ module SitemapGenerator
       add_default_links
     end
 
+    def default_host
+      @default_host
+    end
+    
     def add_default_links
       # Add default links
-      @links << Link.generate('/', :lastmod => Time.now, :changefreq => 'always', :priority => 1.0)
-      @links << Link.generate('/sitemap_index.xml.gz', :lastmod => Time.now, :changefreq => 'always', :priority => 1.0)
+       @links << Link.generate('/', :lastmod => Time.now, :changefreq => 'always', :priority => 1.0, :default_host=>@default_host)
+       @links << Link.generate('/sitemap_index.xml.gz', :lastmod => Time.now, :changefreq => 'always', :priority => 1.0, :default_host=>@default_host)
     end
     
     def add_links

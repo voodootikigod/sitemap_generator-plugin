@@ -10,6 +10,7 @@ module SitemapGenerator
     end
     
     def add(loc, options = {})
+      options.reverse_merge!({:default_host=>@set.default_host})
       set.add_link Link.generate(loc, options)
     end
   end
