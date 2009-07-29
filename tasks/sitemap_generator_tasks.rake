@@ -38,42 +38,77 @@ namespace :sitemap do
 
     # update links from config/sitemap.rb
     load_sitemap_rb
+    if SitemapGenerator::SitemapSet.empty?
+      raise(ArgumentError, "Default hostname not defined") unless SitemapGenerator::Sitemap.default_host.present?
 
-    raise(ArgumentError, "Default hostname not defined") unless SitemapGenerator::Sitemap.default_host.present?
+      links_grps = SitemapGenerator::Sitemap.links.in_groups_of(50000, false)
+      raise(ArgumentError, "TOO MANY LINKS!! I really thought 2,500,000,000 links would be enough for anybody!") if links_grps.length > 50000
 
-    links_grps = SitemapGenerator::Sitemap.links.in_groups_of(50000, false)
-    raise(ArgumentError, "TOO MANY LINKS!! I really thought 2,500,000,000 links would be enough for anybody!") if links_grps.length > 50000
+      Rake::Task['sitemap:clean'].invoke
 
-    Rake::Task['sitemap:clean'].invoke
+      # render individual sitemaps
+      sitemap_files = []
+      xml_sitemap_template = File.join(File.dirname(__FILE__), '../templates/xml_sitemap.builder')
+      links_grps.each_with_index do |links, index|
+        buffer = ''
+        xml = Builder::XmlMarkup.new(:target=>buffer)
+        eval(open(xml_sitemap_template).read, binding)
+        filename = File.join(RAILS_ROOT, "public/sitemap#{index+1}.xml.gz")
+        Zlib::GzipWriter.open(filename) do |gz|
+          gz.write buffer
+        end
+        puts "+ #{filename}"
+        sitemap_files << filename
+      end
 
-    # render individual sitemaps
-    sitemap_files = []
-    xml_sitemap_template = File.join(File.dirname(__FILE__), '../templates/xml_sitemap.builder')
-    links_grps.each_with_index do |links, index|
+      # render index
+      sitemap_index_template = File.join(File.dirname(__FILE__), '../templates/sitemap_index.builder')
       buffer = ''
       xml = Builder::XmlMarkup.new(:target=>buffer)
-      eval(open(xml_sitemap_template).read, binding)
-      filename = File.join(RAILS_ROOT, "public/sitemap#{index+1}.xml.gz")
+      eval(open(sitemap_index_template).read, binding)
+      filename = File.join(RAILS_ROOT, "public/sitemap_index.xml.gz")
       Zlib::GzipWriter.open(filename) do |gz|
         gz.write buffer
       end
       puts "+ #{filename}"
-      sitemap_files << filename
+
+      stop_time = Time.now
+      puts "Sitemap stats: #{number_with_delimiter(SitemapGenerator::Sitemap.links.length)} links, " + ("%dm%02ds" % (stop_time - start_time).divmod(60))
+    else
+      raise(ArgumentError, "Default hostname not defined for all linksets") unless SitemapGenerator::SitemapSet.select{|a| !a.default_host.present? }.empty?
+      
+      Rake::Task['sitemap:clean'].invoke
+      SitemapGenerator::SitemapSet.each{|sitemapset|
+        links_grps = sitemapset.links.in_groups_of(50000, false)
+        filename_prefix = sitemapset.default_host.gsub("http://","").gsub(".","")
+        sitemap_files = []
+        xml_sitemap_template = File.join(File.dirname(__FILE__), '../templates/xml_sitemap.builder')
+        links_grps.each_with_index do |links, index|
+          buffer = ''
+          xml = Builder::XmlMarkup.new(:target=>buffer)
+          eval(open(xml_sitemap_template).read, binding)
+          filename = File.join(RAILS_ROOT, "public/sitemaps/#{filename_prefix}_sitemap#{index+1}.xml.gz")
+          Zlib::GzipWriter.open(filename) do |gz|
+            gz.write buffer
+          end
+          puts "+ #{filename}"
+          sitemap_files << filename
+        end
+
+        # render index
+        sitemap_index_template = File.join(File.dirname(__FILE__), '../templates/sitemap_index.builder')
+        buffer = ''
+        xml = Builder::XmlMarkup.new(:target=>buffer)
+        eval(open(sitemap_index_template).read, binding)
+        filename = File.join(RAILS_ROOT, "public/sitemaps/#{filename_prefix}_sitemap_index.xml.gz")
+        Zlib::GzipWriter.open(filename) do |gz|
+          gz.write buffer
+        end
+        puts "+ #{filename}"
+
+        stop_time = Time.now
+        puts "#{sitemapset.default_host} Sitemap stats: #{number_with_delimiter(sitemapset.links.length)} links, " + ("%dm%02ds" % (stop_time - start_time).divmod(60))
+      }
     end
-
-    # render index
-    sitemap_index_template = File.join(File.dirname(__FILE__), '../templates/sitemap_index.builder')
-    buffer = ''
-    xml = Builder::XmlMarkup.new(:target=>buffer)
-    eval(open(sitemap_index_template).read, binding)
-    filename = File.join(RAILS_ROOT, "public/sitemap_index.xml.gz")
-    Zlib::GzipWriter.open(filename) do |gz|
-      gz.write buffer
-    end
-    puts "+ #{filename}"
-
-    stop_time = Time.now
-    puts "Sitemap stats: #{number_with_delimiter(SitemapGenerator::Sitemap.links.length)} links, " + ("%dm%02ds" % (stop_time - start_time).divmod(60))
-
   end
 end

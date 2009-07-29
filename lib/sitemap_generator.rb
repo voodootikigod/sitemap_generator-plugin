@@ -5,5 +5,6 @@ require 'sitemap_generator/helper'
 
 module SitemapGenerator
   Sitemap = LinkSet.new
+  SitemapSet = []
 end
   
